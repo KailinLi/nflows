@@ -3,7 +3,8 @@
 
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
+
+# from matplotlib import pyplot as plt
 from torch import distributions, nn
 from torch.nn import functional as F
 from torch.nn import init
@@ -28,9 +29,7 @@ class MaskedLinear(nn.Linear):
         is_output,
         bias=True,
     ):
-        super().__init__(
-            in_features=len(in_degrees), out_features=out_features, bias=bias
-        )
+        super().__init__(in_features=len(in_degrees), out_features=out_features, bias=bias)
         mask, degrees = self._get_mask_and_degrees(
             in_degrees=in_degrees,
             out_features=out_features,
@@ -42,9 +41,7 @@ class MaskedLinear(nn.Linear):
         self.register_buffer("degrees", degrees)
 
     @classmethod
-    def _get_mask_and_degrees(
-        cls, in_degrees, out_features, autoregressive_features, random_mask, is_output
-    ):
+    def _get_mask_and_degrees(cls, in_degrees, out_features, autoregressive_features, random_mask, is_output):
         if is_output:
             out_degrees = torchutils.tile(
                 _get_input_degrees(autoregressive_features),
@@ -151,9 +148,7 @@ class MaskedResidualBlock(nn.Module):
         # Batch norm.
         self.use_batch_norm = use_batch_norm
         if use_batch_norm:
-            self.batch_norm_layers = nn.ModuleList(
-                [nn.BatchNorm1d(features, eps=1e-3) for _ in range(2)]
-            )
+            self.batch_norm_layers = nn.ModuleList([nn.BatchNorm1d(features, eps=1e-3) for _ in range(2)])
 
         # Masked linear.
         linear_0 = MaskedLinear(
@@ -174,8 +169,7 @@ class MaskedResidualBlock(nn.Module):
         self.degrees = linear_1.degrees
         if torch.all(self.degrees >= in_degrees).item() != 1:
             raise RuntimeError(
-                "In a masked residual block, the output degrees can't be"
-                " less than the corresponding input degrees."
+                "In a masked residual block, the output degrees can't be" " less than the corresponding input degrees."
             )
 
         # Activation and dropout
@@ -340,12 +334,7 @@ class MixtureOfGaussiansMADE(MADE):
         log_prob = torch.sum(
             torch.logsumexp(
                 log_mixture_coefficients
-                - 0.5
-                * (
-                    np.log(2 * np.pi)
-                    + 2 * torch.log(stds)
-                    + ((inputs[..., None] - means) / stds) ** 2
-                ),
+                - 0.5 * (np.log(2 * np.pi) + 2 * torch.log(stds) + ((inputs[..., None] - means) / stds) ** 2),
                 dim=-1,
             ),
             dim=-1,
@@ -363,9 +352,7 @@ class MixtureOfGaussiansMADE(MADE):
 
             for feature in range(self.features):
                 outputs = self.forward(samples, context)
-                outputs = outputs.reshape(
-                    *samples.shape, self.num_mixture_components, 3
-                )
+                outputs = outputs.reshape(*samples.shape, self.num_mixture_components, 3)
 
                 logits, means, unconstrained_stds = (
                     outputs[:, feature, :, 0],
@@ -381,9 +368,7 @@ class MixtureOfGaussiansMADE(MADE):
                     means.gather(1, components).reshape(-1),
                     stds.gather(1, components).reshape(-1),
                 )
-                samples[:, feature] = (
-                    means + torch.randn(context.shape[0]) * stds
-                ).detach()
+                samples[:, feature] = (means + torch.randn(context.shape[0]) * stds).detach()
 
         return samples.reshape(-1, num_samples, self.features)
 
@@ -393,9 +378,7 @@ class MixtureOfGaussiansMADE(MADE):
         self.final_layer.weight.data[::3, :] = self.epsilon * torch.randn(
             self.features * self.num_mixture_components, self.hidden_features
         )
-        self.final_layer.bias.data[::3] = self.epsilon * torch.randn(
-            self.features * self.num_mixture_components
-        )
+        self.final_layer.bias.data[::3] = self.epsilon * torch.randn(self.features * self.num_mixture_components)
 
         # self.final_layer.weight.data[1::3, :] = self.epsilon * torch.randn(
         #     self.features * self.num_mixture_components, self.hidden_features
@@ -410,13 +393,9 @@ class MixtureOfGaussiansMADE(MADE):
         self.final_layer.weight.data[2::3] = self.epsilon * torch.randn(
             self.features * self.num_mixture_components, self.hidden_features
         )
-        self.final_layer.bias.data[2::3] = torch.log(
-            torch.exp(torch.Tensor([1 - self.epsilon])) - 1
-        ) * torch.ones(
+        self.final_layer.bias.data[2::3] = torch.log(torch.exp(torch.Tensor([1 - self.epsilon])) - 1) * torch.ones(
             self.features * self.num_mixture_components
-        ) + self.epsilon * torch.randn(
-            self.features * self.num_mixture_components
-        )
+        ) + self.epsilon * torch.randn(self.features * self.num_mixture_components)
         # self.final_layer.bias.data[2::3] = torch.log(
         #     torch.Tensor([1 - self.epsilon])
         # ) * torch.ones(
@@ -424,4 +403,3 @@ class MixtureOfGaussiansMADE(MADE):
         # ) + self.epsilon * torch.randn(
         #     self.features * self.num_mixture_components
         # )
-
