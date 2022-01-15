@@ -1,11 +1,11 @@
 """Implementation of normalization-based transforms."""
+import nflows.utils.typechecks as check
 import numpy as np
 import torch
+from nflows.transforms.base import InverseNotAvailable, Transform
 from torch import nn
 from torch.nn import functional as F
 
-from nflows.transforms.base import InverseNotAvailable, Transform
-import nflows.utils.typechecks as check
 
 class BatchNorm(Transform):
     """Transform that performs batch normalization.
@@ -17,7 +17,7 @@ class BatchNorm(Transform):
 
     def __init__(self, features, eps=1e-5, momentum=0.1, affine=True):
         if not check.is_positive_int(features):
-            raise TypeError('Number of features must be a positive integer.')
+            raise TypeError("Number of features must be a positive integer.")
         super().__init__()
 
         self.batch_norm = nets.BatchNorm1d(
@@ -30,7 +30,7 @@ class BatchNorm(Transform):
 
     def forward(self, inputs):
         if inputs.dim() != 2:
-            raise ValueError('Expected 2-dim inputs, got inputs of shape: {}'.format(inputs.shape))
+            raise ValueError("Expected 2-dim inputs, got inputs of shape: {}".format(inputs.shape))
 
         outputs = self.batch_norm(inputs)
 
@@ -48,10 +48,9 @@ class BatchNorm(Transform):
 
     def inverse(self, inputs):
         if self.training:
-            raise InverseNotAvailable(
-                'Batch norm inverse is only available in eval mode, not in training mode.')
+            raise InverseNotAvailable("Batch norm inverse is only available in eval mode, not in training mode.")
         if inputs.dim() != 2:
-            raise ValueError('Expected 2-dim inputs, got inputs of shape: {}'.format(inputs.shape))
+            raise ValueError("Expected 2-dim inputs, got inputs of shape: {}".format(inputs.shape))
 
         outputs = inputs.clone()
         if self.batch_norm.affine:
@@ -207,7 +206,7 @@ class ActNorm(Transform):
 
     def _initialize(self, inputs):
         """Data-dependent initialization, s.t. post-actnorm activations have zero mean and unit
-        variance. """
+        variance."""
         if inputs.dim() == 4:
             num_channels = inputs.shape[1]
             inputs = inputs.permute(0, 2, 3, 1).reshape(-1, num_channels)
@@ -218,4 +217,5 @@ class ActNorm(Transform):
             mu = (inputs / std).mean(dim=0)
             self.log_scale.data = -torch.log(std)
             self.shift.data = -mu
-            self.initialized.data = torch.tensor(True, dtype=torch.bool)
+            # self.initialized.data = torch.tensor(True, dtype=torch.bool)
+            self.initialized |= True
